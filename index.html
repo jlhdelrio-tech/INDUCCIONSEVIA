@@ -1,0 +1,594 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>SEVIA Mobility | Inducción del Driver</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800&family=Barlow:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#EEF3F8;--surface:#FFFFFF;--surface2:#F6F9FC;--ink:#14243B;--muted:#56657A;--line:#CCD7E3;
+  --amber:#E9A100;--amber-soft:#FFF3D1;--amber-ink:#5A3E00;
+  --green:#1F8A5B;--green-soft:#DDF3E8;--red:#C73E3E;--red-soft:#FBE3E3;--blue:#2B5C9E;--blue-soft:#E1EBF7;
+  --road:#26374F;
+  box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#0E1828;--surface:#162437;--surface2:#1B2B41;--ink:#E6EDF5;--muted:#9AAABD;--line:#2C3E56;
+  --amber:#F2B632;--amber-soft:#3A2E10;--amber-ink:#FFE3A1;
+  --green:#3DBA82;--green-soft:#123527;--red:#E06666;--red-soft:#3D1B1E;--blue:#79A8E6;--blue-soft:#1A2C47;--road:#0A1220;
+}}
+:root[data-theme="dark"]{
+  --bg:#0E1828;--surface:#162437;--surface2:#1B2B41;--ink:#E6EDF5;--muted:#9AAABD;--line:#2C3E56;
+  --amber:#F2B632;--amber-soft:#3A2E10;--amber-ink:#FFE3A1;
+  --green:#3DBA82;--green-soft:#123527;--red:#E06666;--red-soft:#3D1B1E;--blue:#79A8E6;--blue-soft:#1A2C47;--road:#0A1220;
+}
+*,*::before,*::after{box-sizing:inherit}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--bg);color:var(--ink);font:400 17px/1.55 Barlow,"Segoe UI",Roboto,Arial,sans-serif;-webkit-font-smoothing:antialiased}
+h1,h2,h3{font-family:"Barlow Condensed","Arial Narrow",Arial,sans-serif;line-height:1.05;margin:0}
+h1{font-size:clamp(2.4rem,6vw,4rem);font-weight:800}
+h2{font-size:clamp(1.9rem,4.4vw,2.8rem);font-weight:700}
+h3{font-size:1.35rem;font-weight:700}
+p{margin:.5rem 0}
+button{font:inherit;color:inherit;cursor:pointer}
+button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid var(--amber);outline-offset:2px}
+.wrap{max-width:1040px;margin:0 auto;padding:0 20px}
+
+/* Header + ruta */
+header{position:sticky;top:env(safe-area-inset-top,0px);z-index:10;background:var(--road);color:#fff;padding:12px 0 14px}
+.brand{display:flex;justify-content:space-between;align-items:baseline;gap:12px;flex-wrap:wrap}
+.brand b{font-family:"Barlow Condensed",sans-serif;font-size:1.5rem;letter-spacing:.02em}
+.brand span{opacity:.75;font-size:.95rem}
+.route{position:relative;margin-top:12px;height:34px}
+.route .lane{position:absolute;left:0;right:0;top:15px;height:4px;background:repeating-linear-gradient(90deg,rgba(255,255,255,.35) 0 14px,transparent 14px 26px);border-radius:2px}
+.route .done{position:absolute;left:0;top:15px;height:4px;background:var(--amber);border-radius:2px;transition:width .5s ease}
+.route .car{position:absolute;top:3px;width:28px;height:28px;margin-left:-14px;transition:left .5s ease}
+.phases{display:flex;justify-content:space-between;font-size:.8rem;margin-top:2px;opacity:.9}
+.phases button{background:none;border:0;padding:2px 0;color:#fff;opacity:.6;font-weight:600}
+.phases button.on{opacity:1;color:var(--amber)}
+
+main{padding:28px 0 120px}
+.module{display:none}
+.module.on{display:block;animation:in .35s ease}
+@keyframes in{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+@media (prefers-reduced-motion:reduce){.module.on{animation:none}.route .done,.route .car{transition:none}}
+.kicker{color:var(--muted);font-weight:600;margin-bottom:6px}
+.lead{font-size:1.15rem;color:var(--muted);max-width:62ch}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:20px;margin-top:20px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+@media (max-width:760px){.grid2,.grid3{grid-template-columns:1fr}}
+.note{border-left:5px solid var(--amber);background:var(--amber-soft);color:var(--amber-ink);padding:12px 16px;border-radius:0 10px 10px 0;margin-top:18px;font-weight:500}
+.note.red{border-color:var(--red);background:var(--red-soft);color:var(--ink)}
+.note.green{border-color:var(--green);background:var(--green-soft);color:var(--ink)}
+ul.clean{list-style:none;padding:0;margin:.5rem 0}
+ul.clean li{padding:6px 0 6px 28px;position:relative}
+ul.clean li::before{content:"";position:absolute;left:4px;top:14px;width:12px;height:4px;background:var(--amber);border-radius:2px}
+.svgbox{overflow-x:auto}
+.svgbox svg{display:block;width:100%;height:auto;min-width:520px}
+
+/* chips/toggles */
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:10px;overflow:hidden;flex-wrap:wrap}
+.seg button{border:0;background:var(--surface2);padding:10px 16px;font-weight:600}
+.seg button.on{background:var(--ink);color:var(--bg)}
+.chip{display:inline-block;border:1px solid var(--line);background:var(--surface2);border-radius:999px;padding:6px 12px;margin:4px 6px 4px 0;font-size:.95rem}
+.btn{background:var(--amber);color:#1b1400;border:0;border-radius:10px;padding:12px 20px;font-weight:700}
+.btn.ghost{background:transparent;color:var(--ink);border:1px solid var(--line)}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+input[type=text],input[type=date],select,textarea{width:100%;font:inherit;color:var(--ink);background:var(--surface2);border:1px solid var(--line);border-radius:10px;padding:10px 12px}
+label.f{display:block;font-weight:600;font-size:.92rem;margin:10px 0 4px}
+.field-missing{border-color:var(--red)!important}
+
+/* Nav inferior */
+.nav{position:fixed;left:0;right:0;bottom:0;background:var(--surface);border-top:1px solid var(--line);padding:12px 0 calc(12px + env(safe-area-inset-bottom,0px));z-index:10}
+.nav .wrap{display:flex;justify-content:space-between;align-items:center;gap:12px}
+.nav .count{color:var(--muted);font-weight:600;font-size:.95rem}
+
+/* Hero fases */
+.phase-card{border:2px solid var(--line);border-radius:14px;padding:16px;background:var(--surface);text-align:left;width:100%}
+.phase-card.on{border-color:var(--amber);box-shadow:0 0 0 3px var(--amber-soft)}
+.phase-card .n{font-family:"Barlow Condensed",sans-serif;font-size:2.4rem;font-weight:800;color:var(--amber);line-height:1}
+.phase-detail{margin-top:14px;min-height:60px}
+
+/* Turno */
+.turno-big{font-family:"Barlow Condensed",sans-serif;font-size:5.5rem;font-weight:800;line-height:1;color:var(--ink)}
+.turno-big i{font-style:normal;color:var(--amber)}
+.timebar{position:relative;height:44px;background:var(--surface2);border:1px solid var(--line);border-radius:10px;margin-top:14px;overflow:hidden}
+.timebar .early{position:absolute;top:0;bottom:0;background:var(--green-soft);border-right:3px solid var(--green);transition:width .4s}
+.timebar .mark{position:absolute;top:0;bottom:0;width:3px;background:var(--red)}
+.timebar .lbl{position:absolute;top:11px;font-size:.85rem;font-weight:600}
+
+/* WhatsApp */
+.wa{background:#E5DDD5;border-radius:14px;padding:16px;min-height:220px}
+:root[data-theme="dark"] .wa{background:#0B141A}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .wa{background:#0B141A}}
+.bubble{background:#DCF8C6;color:#111;border-radius:10px 0 10px 10px;padding:10px 12px;max-width:320px;margin-left:auto;white-space:pre-wrap;font-size:.95rem;box-shadow:0 1px 1px rgba(0,0,0,.15)}
+:root[data-theme="dark"] .bubble{background:#005C4B;color:#E9EDEF}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .bubble{background:#005C4B;color:#E9EDEF}}
+.bubble .miss{color:#C73E3E;font-weight:700}
+.tiles{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:16px}
+@media (max-width:620px){.tiles{grid-template-columns:repeat(2,1fr)}}
+.tile{border-radius:12px;padding:14px;background:var(--ink);color:var(--bg);font-family:"Barlow Condensed",sans-serif;font-size:1.5rem;font-weight:700;text-align:center}
+.tile small{display:block;font-family:Barlow,sans-serif;font-size:.8rem;font-weight:500;opacity:.8}
+
+/* Pasos */
+.steps{counter-reset:s;list-style:none;padding:0;margin:0}
+.steps li{position:relative;padding:0 0 18px 56px}
+.steps li::before{counter-increment:s;content:counter(s);position:absolute;left:0;top:0;width:40px;height:40px;border-radius:50%;background:var(--ink);color:var(--bg);display:grid;place-items:center;font-family:"Barlow Condensed",sans-serif;font-weight:800;font-size:1.3rem}
+.steps li::after{content:"";position:absolute;left:19px;top:42px;bottom:4px;width:2px;background:var(--line)}
+.steps li:last-child::after{display:none}
+.steps b{display:block;font-size:1.08rem}
+
+/* Auto */
+.hot{cursor:pointer}
+.hot circle{fill:var(--amber);stroke:#fff;stroke-width:3;transition:fill .2s}
+.hot.done circle{fill:var(--green)}
+.hot text{fill:#1b1400;font:700 14px Barlow,sans-serif;pointer-events:none}
+.hot.done text{fill:#fff}
+.hot:focus-visible circle{stroke:var(--blue);stroke-width:5}
+
+/* Equipo */
+.eq-row{display:grid;grid-template-columns:1fr auto;gap:10px;align-items:center;padding:10px 0;border-bottom:1px solid var(--line)}
+.eq-row:last-child{border-bottom:0}
+.eq-row .seg button{padding:7px 11px;font-size:.9rem}
+.eq-row .seg button.on.si{background:var(--green);color:#fff}
+.eq-row .seg button.on.no{background:var(--red);color:#fff}
+.eq-row .seg button.on.obs{background:var(--amber);color:#1b1400}
+.eq-row input{grid-column:1/-1}
+pre.report{background:var(--surface2);border:1px solid var(--line);border-radius:10px;padding:14px;white-space:pre-wrap;font:500 .92rem/1.5 Barlow,sans-serif;margin:10px 0}
+
+/* Grupos */
+.groups{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px;margin-top:16px}
+.group{border-radius:12px;padding:14px;border:1px solid var(--line);background:var(--surface);border-top:6px solid var(--c)}
+.group h3{font-size:1.2rem;margin-bottom:4px}
+.group p{font-size:.93rem;color:var(--muted);margin:0}
+.scen{padding:14px 0;border-bottom:1px solid var(--line)}
+.scen:last-child{border-bottom:0}
+.scen .opts{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.scen .opts button{border:1px solid var(--line);background:var(--surface2);border-radius:999px;padding:6px 12px;font-size:.9rem}
+.scen .opts button.ok{background:var(--green);color:#fff;border-color:var(--green)}
+.scen .opts button.bad{background:var(--red);color:#fff;border-color:var(--red)}
+.fb{font-size:.9rem;font-weight:600;margin-top:6px;min-height:1.2em}
+
+/* Batería */
+.gauge-wrap{display:flex;gap:20px;align-items:center;flex-wrap:wrap}
+.batt{width:180px;height:80px;border:5px solid var(--ink);border-radius:12px;position:relative;padding:5px}
+.batt::after{content:"";position:absolute;right:-16px;top:22px;width:10px;height:26px;background:var(--ink);border-radius:0 4px 4px 0}
+.batt .lvl{height:100%;border-radius:5px;transition:width .2s,background .2s}
+.batt .min{position:absolute;top:-4px;bottom:-4px;left:calc(5px + 30% * (170/180));width:0;border-left:3px dashed var(--red)}
+input[type=range]{width:100%;accent-color:var(--amber)}
+.big-num{font-family:"Barlow Condensed",sans-serif;font-size:3rem;font-weight:800;line-height:1}
+
+/* Reglas */
+.rules{list-style:none;padding:0;margin:16px 0 0;display:grid;gap:10px}
+.rules li{display:grid;grid-template-columns:54px 1fr;gap:12px;align-items:start;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:12px 14px}
+.rules .rn{font-family:"Barlow Condensed",sans-serif;font-size:2.2rem;font-weight:800;color:var(--amber);line-height:1}
+
+/* Checklist */
+.check{display:flex;gap:12px;align-items:center;padding:12px;border:1px solid var(--line);border-radius:10px;background:var(--surface);margin-bottom:8px;cursor:pointer;user-select:none}
+.check input{width:22px;height:22px;accent-color:var(--green);flex:none}
+.check.on{border-color:var(--green);background:var(--green-soft)}
+.ring{width:150px;height:150px}
+
+/* Quiz */
+.q-opts{display:grid;gap:8px;margin-top:12px}
+.q-opts button{text-align:left;border:2px solid var(--line);background:var(--surface2);border-radius:10px;padding:12px 14px}
+.q-opts button.ok{border-color:var(--green);background:var(--green-soft)}
+.q-opts button.bad{border-color:var(--red);background:var(--red-soft)}
+.q-bar{height:8px;background:var(--surface2);border-radius:4px;overflow:hidden;margin:10px 0 16px;border:1px solid var(--line)}
+.q-bar div{height:100%;background:var(--amber);transition:width .3s}
+
+/* Certificado */
+.cert{border:3px solid var(--ink);border-radius:16px;padding:28px;background:var(--surface);position:relative;overflow:hidden}
+.cert::before{content:"";position:absolute;left:0;right:0;top:0;height:10px;background:repeating-linear-gradient(90deg,var(--amber) 0 30px,var(--ink) 30px 60px)}
+.cert dl{display:grid;grid-template-columns:auto 1fr;gap:6px 16px;margin:16px 0}
+.cert dt{color:var(--muted);font-weight:600}
+.cert dd{margin:0;font-weight:700}
+.theme-btn{background:transparent;border:1px solid rgba(255,255,255,.35);color:#fff;border-radius:8px;padding:4px 10px;font-size:.85rem}
+@media print{header,.nav,.no-print{display:none!important}main{padding:0}.module{display:none!important}.module.on{display:block!important}}
+</style>
+</head>
+<body>
+<header>
+  <div class="wrap">
+    <div class="brand">
+      <div><b>SEVIA Mobility</b> <span>Inducción del Driver</span></div>
+      <button class="theme-btn" id="themeBtn" aria-label="Cambiar tema claro u oscuro">Tema</button>
+    </div>
+    <div class="route" aria-hidden="true">
+      <div class="lane"></div><div class="done" id="routeDone"></div>
+      <svg class="car" id="routeCar" viewBox="0 0 28 28"><rect x="3" y="7" width="22" height="14" rx="5" fill="#F2B632"/><rect x="15" y="9" width="6" height="10" rx="2" fill="#26374F"/><circle cx="8" cy="7" r="2.5" fill="#fff"/><circle cx="8" cy="21" r="2.5" fill="#fff"/></svg>
+    </div>
+    <nav class="phases" id="phases" aria-label="Secciones"></nav>
+  </div>
+</header>
+
+<main class="wrap" id="main"></main>
+
+<div class="nav no-print">
+  <div class="wrap">
+    <button class="btn ghost" id="prev">Anterior</button>
+    <span class="count" id="count"></span>
+    <button class="btn" id="next">Siguiente</button>
+  </div>
+</div>
+
+<script>
+(function(){
+const S = {get(k,d){try{const v=localStorage.getItem('sevia_'+k);return v?JSON.parse(v):d}catch(e){return d}},
+           set(k,v){try{localStorage.setItem('sevia_'+k,JSON.stringify(v))}catch(e){}}};
+const $=(s,r=document)=>r.querySelector(s), $$=(s,r=document)=>[...r.querySelectorAll(s)];
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const today=()=>{const d=new Date();const m=['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];return d.getDate()+' '+m[d.getMonth()]+' '+d.getFullYear()};
+
+/* ---------- Tema ---------- */
+const root=document.documentElement;
+const savedTheme=S.get('theme',null); if(savedTheme) root.setAttribute('data-theme',savedTheme);
+$('#themeBtn').onclick=()=>{const dark=root.getAttribute('data-theme')?root.getAttribute('data-theme')==='dark':matchMedia('(prefers-color-scheme: dark)').matches;const t=dark?'light':'dark';root.setAttribute('data-theme',t);S.set('theme',t)};
+
+/* ---------- Datos ---------- */
+const EQUIPO=['Llanta de refacción','Manivela','Gato','Fantasma','Cable de carga','Tarjeta de circulación','Porta celular','Póliza','Gancho de arrastre'];
+const GRUPOS=[
+ {k:'Asistencias',c:'#2B5C9E',d:'Registrar tu llegada: datos, foto de licencia y ubicación por WhatsApp.'},
+ {k:'Tableros M / V',c:'#E9A100',d:'Reporte de inicio y fin de turno, siempre con foto del tablero.'},
+ {k:'Daños y Reportes',c:'#C73E3E',d:'Golpes, daños, fallas, incidentes, testigos y condiciones nuevas.'},
+ {k:'Depósitos',c:'#1F8A5B',d:'Evidencia del efectivo generado durante la jornada.'},
+ {k:'Avisos SEVIA',c:'#6B4FA3',d:'Comunicados, instrucciones, seguimiento y eventos de operación.'},
+ {k:'Neumáticos / Equipo de cambio',c:'#4A5A70',d:'Llantas, refacción y equipo de cambio.'},
+ {k:'Kit Premier',c:'#B0562B',d:'Evidencias y control del Kit Premier cuando corresponda.'}
+];
+const ESCENARIOS=[
+ ['Llegaste al HUB y envías tu foto de licencia y tu ubicación.','Asistencias'],
+ ['Vas a salir y mandas la foto del tablero con kilometraje y batería.','Tableros M / V'],
+ ['A media jornada se enciende un testigo en el tablero.','Daños y Reportes'],
+ ['Envías la evidencia del efectivo que generaste en el turno.','Depósitos'],
+ ['Necesitas coordinar el cambio de una llanta con el equipo.','Neumáticos / Equipo de cambio'],
+ ['Al recibir la unidad ves un rayón nuevo en la puerta trasera.','Daños y Reportes'],
+ ['Llegas al HUB al final y mandas tu reporte de cierre con foto del tablero.','Tableros M / V'],
+ ['Te piden enviar la evidencia del Kit Premier.','Kit Premier']
+];
+const REGLAS=[
+ ['Llega puntual.','Primera jornada: una hora antes. Jornadas posteriores: mínimo 15 minutos antes.'],
+ ['Todos tus mensajes llevan cuatro datos.','Fecha + Nombre completo + Turno + Placa.'],
+ ['Revisa la unidad y su equipamiento antes de salir.',''],
+ ['Reporta de inmediato cualquier daño, falla o incidencia nueva.',''],
+ ['La unidad es solo para trabajar en DiDi.','No se permiten viajes personales.'],
+ ['No salgas del Área SEVIA autorizada.','Salvo instrucción o autorización expresa del equipo operativo.'],
+ ['Regresa al HUB a tiempo y con mínimo 30% de batería.','Tiempo máximo de operación: 10 horas.'],
+ ['Entrega la unidad limpia, ordenada y con su equipamiento completo.',''],
+ ['Usa siempre el grupo de WhatsApp correcto.','Cada reporte tiene su canal.'],
+ ['Conoce y respeta la Tabla de Puntos y Descuentos.','Está publicada físicamente en el HUB.']
+];
+const CIERRE=['Reporté mi fin de turno.','Se observa claramente el kilometraje.','Se observa claramente la batería.','Revisé todo el equipamiento.','Reporté cualquier daño nuevo.','Dejé la unidad limpia.','Registré mis ingresos con el HubLeader.','Entregué el efectivo correspondiente.','Entregué la unidad.','Entregué las llaves.'];
+const QUIZ=[
+ ['¿Con cuánta anticipación te presentas en el HUB en tu primera jornada?',['15 minutos antes','1 hora antes','Justo a tu hora'],1],
+ ['A partir de tu segunda jornada, ¿con cuánta anticipación llegas como mínimo?',['15 minutos antes','5 minutos antes','1 hora antes'],0],
+ ['¿Qué datos debe incluir todo mensaje operativo?',['Nombre y placa','Fecha, turno y ubicación','Fecha, nombre completo, turno y placa'],2],
+ ['Al recibir la unidad encuentras un rayón nuevo. ¿Dónde lo reportas?',['Solo en Tableros','En Daños y Reportes de tu turno','En Avisos SEVIA'],1],
+ ['¿Con qué nivel mínimo de batería debes entregar la unidad?',['20%','30%','50%'],1],
+ ['¿Cuál es el tiempo máximo de operación establecido?',['8 horas','10 horas','12 horas'],1],
+ ['¿Qué debe verse claramente en la foto del tablero?',['Kilometraje y nivel de batería','Placa y licencia','Tu ubicación'],0],
+ ['¿Puedes usar la unidad para un viaje personal corto?',['Sí, si es cerca del HUB','Sí, fuera del horario','No, solo para la operación autorizada en DiDi'],2],
+ ['¿En qué grupo registras tu llegada con licencia y ubicación?',['Asistencias','Tableros','Depósitos'],0],
+ ['Al llegar al HUB para cerrar, ¿qué debes hacer antes de retirarte?',['Enviar solo el fin de turno','Registrar ingresos con el HubLeader, entregar efectivo, unidad y llaves','Dejar las llaves dentro de la unidad'],1]
+];
+const PASS=8;
+const SALT='SEVIA-GML-2026';
+const norm=s=>String(s).normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/\s+/g,' ').trim();
+function cyrb53(str,seed=0){let h1=0xdeadbeef^seed,h2=0x41c6ce57^seed;for(let i=0;i<str.length;i++){const ch=str.charCodeAt(i);h1=Math.imul(h1^ch,2654435761);h2=Math.imul(h2^ch,1597334677)}
+ h1=Math.imul(h1^(h1>>>16),2246822507);h1^=Math.imul(h2^(h2>>>13),3266489909);h2=Math.imul(h2^(h2>>>16),2246822507);h2^=Math.imul(h1^(h1>>>13),3266489909);return 4294967296*(2097151&h2)+(h1>>>0)}
+function vcode(n,t,s,f){const x=cyrb53([SALT,norm(n),norm(t).replace(/ /g,''),String(s),norm(f)].join('|')).toString(36).toUpperCase().padStart(8,'0').slice(-8);return 'SEV-'+x.slice(0,4)+'-'+x.slice(4)}
+
+/* ---------- Módulos ---------- */
+const PH=['Bienvenida','Despegue','Operación','Aterrizaje','Certificación'];
+const M=[];
+
+M.push({ph:0,html:`
+<p class="kicker">Bienvenido a SEVIA</p>
+<h1>Tu jornada siempre sigue la misma ruta</h1>
+<p class="lead">A partir de hoy formas parte de una operación en la que la seguridad, la puntualidad, la comunicación, el servicio y el cuidado de las unidades son fundamentales. Toca cada fase para conocerla.</p>
+<div class="grid3" style="margin-top:22px">
+ <button class="phase-card on" data-ph="0"><div class="n">1</div><h3>Despegue</h3><span>Preparas y recibes la unidad.</span></button>
+ <button class="phase-card" data-ph="1"><div class="n">2</div><h3>Operación</h3><span>Trabajas en DiDi con las reglas SEVIA.</span></button>
+ <button class="phase-card" data-ph="2"><div class="n">3</div><h3>Aterrizaje</h3><span>Regresas, reportas, registras y entregas.</span></button>
+</div>
+<div class="panel phase-detail" id="phDetail"></div>
+<div class="grid2">
+ <div class="panel"><h3>En esta inducción aprenderás</h3><ul class="clean">
+  <li>Cómo funciona tu jornada y tu turno.</li><li>Las principales reglas de operación.</li><li>Qué revisar al recibir una unidad.</li><li>Cómo usar los grupos de WhatsApp y enviar reportes.</li><li>Qué hacer ante un daño, falla o incidencia.</li><li>Cómo cerrar correctamente tu jornada.</li></ul></div>
+ <div class="panel"><h3>Para poder operar</h3><ul class="clean">
+  <li>Completa todos los módulos.</li><li>Aprueba la evaluación final (mínimo ${PASS} de ${QUIZ.length}).</li><li>Acepta digitalmente las reglas de SEVIA.</li></ul>
+  <div class="note">Solo después de aprobar recibirás acceso a los grupos operativos de WhatsApp.</div></div>
+</div>`,
+init(el){const D=[
+ ['Despegue','Registras tu asistencia, haces el alcoholímetro, recibes y revisas la unidad y su equipamiento, y envías tu reporte de inicio de turno. El HubLeader lo valida antes de tu salida.'],
+ ['Operación','Trabajas en DiDi solo dentro del Área SEVIA, respetas las reglas de tránsito, cuidas la unidad, reportas cualquier problema y planeas tu regreso: máximo 10 horas y mínimo 30% de batería.'],
+ ['Aterrizaje','Revisas y limpias la unidad, envías tu fin de turno, reportas daños nuevos, registras ingresos con el HubLeader, entregas el efectivo, la unidad y las llaves.']];
+ const show=i=>{$$('.phase-card',el).forEach((b,j)=>b.classList.toggle('on',i===j));$('#phDetail',el).innerHTML='<h3>'+D[i][0]+'</h3><p>'+D[i][1]+'</p>'};
+ $$('.phase-card',el).forEach(b=>b.onclick=()=>show(+b.dataset.ph));show(0);}});
+
+M.push({ph:0,html:`
+<p class="kicker">Módulo 1</p>
+<h2>Tu turno</h2>
+<p class="lead">Cada Driver tiene un turno asignado. La letra indica el tipo de turno y el número, la posición de tu horario dentro de la operación.</p>
+<div class="grid2">
+ <div class="panel"><h3>Arma un turno de ejemplo</h3>
+  <label class="f">Tipo</label><div class="seg" id="tLetter"><button data-v="M" class="on">M</button><button data-v="V">V</button></div>
+  <label class="f">Número</label><div class="seg" id="tNum">${[1,2,3,4,5,6,7].map(n=>`<button data-v="${n}" ${n===2?'class="on"':''}>${n}</button>`).join('')}</div>
+ </div>
+ <div class="panel" aria-live="polite"><div class="turno-big" id="tBig"></div><p id="tTxt"></p></div>
+</div>
+<div class="panel"><h3>¿A qué hora llegas al HUB?</h3>
+ <div class="seg" id="tDay"><button data-v="60" class="on">Primera jornada</button><button data-v="15">Jornadas posteriores</button></div>
+ <div class="timebar"><div class="early" id="tEarly"></div><span class="lbl" id="tLbl" style="left:12px"></span><div class="mark" style="left:75%"></div><span class="lbl" style="left:calc(75% + 8px)">Tu horario</span></div>
+ <p id="tDayTxt" style="margin-top:10px"></p>
+</div>`,
+init(el){let L='M',N=2;const r=()=>{$('#tBig',el).innerHTML='<i>'+L+'</i>'+N;$('#tTxt',el).textContent=(L==='M'?'Matutino':'Vespertino / nocturno')+', posición '+N+' del horario asignado.'};
+ const seg=(id,cb)=>$$('#'+id+' button',el).forEach(b=>b.onclick=()=>{$$('#'+id+' button',el).forEach(x=>x.classList.remove('on'));b.classList.add('on');cb(b.dataset.v)});
+ seg('tLetter',v=>{L=v;r()});seg('tNum',v=>{N=v;r()});r();
+ const d=v=>{v=+v;$('#tEarly',el).style.left=(75-(v===60?60:15))+'%';$('#tEarly',el).style.width=(v===60?60:15)+'%';$('#tLbl',el).style.left=(75-(v===60?60:15)+1)+'%';$('#tLbl',el).textContent=v===60?'1 hora antes':'15 min';
+  $('#tDayTxt',el).innerHTML=v===60?'<b>Tu primera jornada:</b> preséntate en el HUB 1 hora antes de tu horario programado.':'<b>A partir de tu segunda jornada:</b> preséntate por lo menos 15 minutos antes.'};
+ seg('tDay',d);d(60);}});
+
+M.push({ph:0,html:`
+<p class="kicker">Módulo 2</p>
+<h2>La regla de oro de todos los mensajes</h2>
+<p class="lead">No importa en qué grupo reportes: todo mensaje operativo empieza con estos cuatro datos. Después escribes la información del reporte.</p>
+<div class="tiles"><div class="tile"><small>1</small>Fecha</div><div class="tile"><small>2</small>Nombre completo</div><div class="tile"><small>3</small>Turno</div><div class="tile"><small>4</small>Placa</div></div>
+<div class="grid2">
+ <div class="panel"><h3>Practica tu mensaje</h3>
+  <label class="f" for="gF">Fecha</label><input type="text" id="gF">
+  <label class="f" for="gN">Nombre completo</label><input type="text" id="gN" placeholder="Nombre y apellidos">
+  <label class="f" for="gT">Turno</label><input type="text" id="gT" placeholder="Ej. V2">
+  <label class="f" for="gP">Placa</label><input type="text" id="gP" placeholder="Ej. 30J024">
+  <label class="f" for="gX">Información del reporte</label><input type="text" id="gX" placeholder="Ej. Llegué al HUB">
+ </div>
+ <div class="panel"><h3>Así se verá en WhatsApp</h3><div class="wa"><div class="bubble" id="gBub"></div></div><div id="gOk" class="note" style="display:none"></div></div>
+</div>`,
+init(el){$('#gF',el).value=today();const ids=['gF','gN','gT','gP','gX'];
+ const r=()=>{const v=ids.map(i=>$('#'+i,el).value.trim());const lab=['Fecha','Nombre completo','Turno','Placa'];let miss=0;
+  const lines=[v[0]||'<span class="miss">Falta la fecha</span>',v[1]||'<span class="miss">Falta el nombre completo</span>','Turno: '+(v[2]?esc(v[2]):'<span class="miss">falta</span>'),'Placa: '+(v[3]?esc(v[3]):'<span class="miss">falta</span>')];
+  v.slice(0,4).forEach((x,i)=>{$('#'+ids[i],el).classList.toggle('field-missing',!x);if(!x)miss++});
+  if(v[0])lines[0]=esc(v[0]);if(v[1])lines[1]=esc(v[1]);
+  $('#gBub',el).innerHTML=lines.join('\n')+(v[4]?'\n\n'+esc(v[4]):'');
+  const ok=$('#gOk',el);ok.style.display='block';ok.className='note '+(miss?'red':'green');ok.textContent=miss?'Faltan '+miss+' dato(s). Un mensaje incompleto puede no ser válido.':'Mensaje completo: Fecha + Nombre completo + Turno + Placa.'};
+ ids.forEach(i=>$('#'+i,el).oninput=r);r();}});
+
+M.push({ph:1,html:`
+<p class="kicker">Módulo 3 · Despegue</p>
+<h2>Antes de salir</h2>
+<div class="grid2">
+ <div class="panel"><ol class="steps">
+  <li><b>Registra tu asistencia</b>En el grupo Asistencias: fecha, nombre completo, turno, placa, foto de tu licencia y ubicación actual por WhatsApp.</li>
+  <li><b>Realiza tu alcoholímetro</b>La prueba es obligatoria antes de iniciar la jornada.</li>
+  <li><b>Recibe tu unidad</b>Tu unidad se asigna desde tu contratación. Revisa su condición antes de salir.</li>
+  <li><b>Revisa la unidad</b>Estado general, llantas, luces, espejos, limpieza, batería, kilometraje, daños visibles y equipamiento.</li>
+ </ol></div>
+ <div class="panel"><h3>Inspección: toca cada punto</h3><p style="color:var(--muted);margin-top:0" id="carCount"></p>
+  <div class="svgbox"><svg viewBox="0 0 520 300" id="carSvg" role="group" aria-label="Diagrama de la unidad">
+   <rect x="110" y="60" width="300" height="180" rx="60" fill="var(--surface2)" stroke="var(--ink)" stroke-width="4"/>
+   <rect x="170" y="80" width="80" height="140" rx="16" fill="var(--blue-soft)" stroke="var(--ink)" stroke-width="3"/>
+   <rect x="300" y="85" width="60" height="130" rx="14" fill="var(--blue-soft)" stroke="var(--ink)" stroke-width="3"/>
+   <rect x="140" y="40" width="50" height="22" rx="6" fill="var(--ink)"/><rect x="330" y="40" width="50" height="22" rx="6" fill="var(--ink)"/>
+   <rect x="140" y="238" width="50" height="22" rx="6" fill="var(--ink)"/><rect x="330" y="238" width="50" height="22" rx="6" fill="var(--ink)"/>
+   <rect x="225" y="46" width="22" height="12" rx="3" fill="var(--ink)"/><rect x="225" y="242" width="22" height="12" rx="3" fill="var(--ink)"/>
+   <text x="30" y="155" fill="var(--muted)" font-family="Barlow" font-size="14">Frente</text><text x="440" y="155" fill="var(--muted)" font-family="Barlow" font-size="14">Atrás</text>
+  </svg></div>
+  <div id="carInfo" class="note" aria-live="polite">Toca un punto amarillo para ver qué revisar.</div>
+ </div>
+</div>`,
+init(el){const P=[
+ ['Llantas',165,30,'Presión visible, desgaste y daños en llantas y rines.'],['Luces',95,110,'Faros, calaveras y direccionales funcionando.'],['Espejos',236,30,'Laterales y retrovisor completos, sin roturas.'],
+ ['Tablero',210,150,'Kilometraje y nivel de batería. Revisa que no haya testigos encendidos.'],['Limpieza',330,150,'Interior y exterior limpios, sin basura ni objetos.'],['Daños visibles',430,70,'Golpes, rayones o piezas faltantes en toda la carrocería.'],['Equipamiento',430,230,'Refacción, gato, manivela y el resto del equipo. Lo verás en el siguiente módulo.']];
+ const svg=$('#carSvg',el),seen=new Set(S.get('car',[]));
+ P.forEach((p,i)=>{const g=document.createElementNS('http://www.w3.org/2000/svg','g');g.setAttribute('class','hot'+(seen.has(i)?' done':''));g.setAttribute('tabindex','0');g.setAttribute('role','button');g.setAttribute('aria-label',p[0]);
+  g.innerHTML=`<circle cx="${p[1]}" cy="${p[2]}" r="17"/><text x="${p[1]}" y="${p[2]+5}" text-anchor="middle">${i+1}</text>`;
+  const act=()=>{seen.add(i);S.set('car',[...seen]);g.classList.add('done');$('#carInfo',el).innerHTML='<b>'+p[0]+':</b> '+p[3];cnt()};
+  g.onclick=act;g.onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();act()}};svg.appendChild(g)});
+ const cnt=()=>{$('#carCount',el).textContent='Revisados: '+seen.size+' de '+P.length+(seen.size===P.length?'. Inspección completa.':'')};cnt();}});
+
+M.push({ph:1,html:`
+<p class="kicker">Módulo 4 · Despegue</p>
+<h2>Equipamiento y reporte de inicio de turno</h2>
+<p class="lead">Revisa el equipamiento antes de salir y al regresar. Si algo falta o tiene una condición especial, escríbelo claramente. Marca cada elemento y se generará tu reporte.</p>
+<div class="grid2">
+ <div class="panel"><h3>Equipamiento</h3><div id="eqList"></div></div>
+ <div class="panel"><h3>Tu reporte para el grupo Tableros</h3>
+  <div class="seg" id="eqType"><button data-v="INICIO" class="on">Inicio de turno</button><button data-v="FIN">Fin de turno</button></div>
+  <label class="f" for="eqN">Nombre completo</label><input type="text" id="eqN">
+  <div class="grid2" style="gap:10px;margin-top:0"><div><label class="f" for="eqT">Turno</label><input type="text" id="eqT" placeholder="V2"></div><div><label class="f" for="eqP">Placa</label><input type="text" id="eqP" placeholder="30J024"></div></div>
+  <pre class="report" id="eqRep"></pre>
+  <button class="btn" id="eqCopy">Copiar reporte</button> <span id="eqMsg" style="font-weight:600;margin-left:8px"></span>
+ </div>
+</div>
+<div class="panel"><h3>La foto del tablero</h3>
+ <div class="grid2" style="margin-top:0;align-items:center">
+  <div class="svgbox"><svg viewBox="0 0 520 220" role="img" aria-label="Tablero con kilometraje y batería visibles">
+   <rect x="10" y="10" width="500" height="200" rx="30" fill="#0E1828" stroke="var(--ink)" stroke-width="3"/>
+   <circle cx="150" cy="115" r="75" fill="none" stroke="#2C3E56" stroke-width="12"/>
+   <circle cx="150" cy="115" r="75" fill="none" stroke="#3DBA82" stroke-width="12" stroke-dasharray="306 471" transform="rotate(-90 150 115)"/>
+   <text x="150" y="112" fill="#fff" text-anchor="middle" font-family="Barlow Condensed" font-size="42" font-weight="800">65%</text>
+   <text x="150" y="140" fill="#9AAABD" text-anchor="middle" font-family="Barlow" font-size="15">Batería</text>
+   <rect x="290" y="75" width="190" height="70" rx="10" fill="#162437" stroke="#F2B632" stroke-width="3"/>
+   <text x="385" y="120" fill="#fff" text-anchor="middle" font-family="Barlow Condensed" font-size="36" font-weight="700">48 215 km</text>
+   <text x="385" y="168" fill="#9AAABD" text-anchor="middle" font-family="Barlow" font-size="15">Kilometraje</text>
+  </svg></div>
+  <ul class="clean"><li>Tablero completo en la foto.</li><li>Kilometraje legible.</li><li>Nivel o porcentaje de batería legible.</li><li>Foto enfocada. Si no se lee, se repite.</li><li>El HubLeader valida el reporte antes de tu salida.</li></ul>
+ </div>
+</div>`,
+init(el){const st=S.get('eq',EQUIPO.map(()=>({v:'',o:''})));let type='INICIO';
+ const list=$('#eqList',el);
+ list.innerHTML=EQUIPO.map((e,i)=>`<div class="eq-row" data-i="${i}"><span>${e}</span><div class="seg"><button class="si" data-v="Sí">Sí</button><button class="no" data-v="No">No</button><button class="obs" data-v="Obs">Con observación</button></div><input type="text" placeholder="Describe la condición (ej. ring golpeado, no puede utilizarse)" style="display:none"></div>`).join('');
+ $$('.eq-row',list).forEach(row=>{const i=+row.dataset.i,inp=$('input',row);
+  const paint=()=>{$$('button',row).forEach(b=>b.classList.toggle('on',b.dataset.v===st[i].v));inp.style.display=st[i].v==='Obs'?'block':'none';inp.value=st[i].o};
+  $$('button',row).forEach(b=>b.onclick=()=>{st[i].v=b.dataset.v;S.set('eq',st);paint();rep()});inp.oninput=()=>{st[i].o=inp.value;S.set('eq',st);rep()};paint()});
+ $$('#eqType button',el).forEach(b=>b.onclick=()=>{$$('#eqType button',el).forEach(x=>x.classList.remove('on'));b.classList.add('on');type=b.dataset.v;rep()});
+ ['eqN','eqT','eqP'].forEach(i=>$('#'+i,el).oninput=rep);
+ function rep(){const n=$('#eqN',el).value.trim()||'[Nombre completo]',t=$('#eqT',el).value.trim()||'[Turno]',p=$('#eqP',el).value.trim()||'[Placa]';
+  const lines=EQUIPO.map((e,i)=>'- '+e+': '+(st[i].v==='Obs'?'Sí, '+(st[i].o||'[describe la condición]'):(st[i].v||'[pendiente]')));
+  $('#eqRep',el).textContent=type+' DE TURNO – '+t+'\n'+today()+'\n'+n+'\nTurno: '+t+'\nPlaca: '+p+'\n\nEquipamiento:\n'+lines.join('\n')+'\n\n[Adjunta foto completa del tablero]';}
+ $('#eqCopy',el).onclick=async()=>{try{await navigator.clipboard.writeText($('#eqRep',el).textContent);$('#eqMsg',el).textContent='Copiado'}catch(e){$('#eqMsg',el).textContent='Selecciona el texto y cópialo manualmente'}};
+ rep();}});
+
+M.push({ph:1,html:`
+<p class="kicker">Módulo 5 · Despegue</p>
+<h2>¿Encontraste un daño o problema?</h2>
+<p class="lead">Si al recibir la unidad encuentras cualquier condición nueva, repórtala de inmediato en el grupo Daños y Reportes de tu turno. No la reportes solamente en Tableros.</p>
+<div class="panel"><h3>Condiciones que debes reportar</h3>
+ ${['Golpe','Rayón','Llanta dañada','Rin dañado','Espejo roto','Testigo encendido','Daño interior','Pieza faltante','Falla','Cualquier condición nueva'].map(x=>`<span class="chip">${x}</span>`).join('')}
+</div>
+<div class="grid2">
+ <div class="panel"><h3>Tu reporte debe incluir</h3><ul class="clean"><li>Fecha</li><li>Nombre completo</li><li>Turno</li><li>Placa</li><li>Descripción del problema</li><li>Fotografías</li></ul></div>
+ <div class="panel"><h3>Pruébate</h3><p>Recibes la unidad y notas un espejo lateral estrellado. Ya enviaste tu foto de tablero. ¿Qué haces?</p>
+  <div class="q-opts" id="dmg">
+   <button data-ok="0">Nada, ya mandé el reporte de inicio en Tableros.</button>
+   <button data-ok="1">Lo reporto de inmediato en Daños y Reportes con descripción y fotos.</button>
+   <button data-ok="0">Lo comento al final del turno con el HubLeader.</button>
+  </div><p class="fb" id="dmgFb" aria-live="polite"></p></div>
+</div>
+<div class="note red">Los golpes, daños, fallas o eventualidades se comunican de inmediato, también si ocurren durante la jornada.</div>`,
+init(el){$$('#dmg button',el).forEach(b=>b.onclick=()=>{$$('#dmg button',el).forEach(x=>x.classList.remove('ok','bad'));const ok=b.dataset.ok==='1';b.classList.add(ok?'ok':'bad');
+ $('#dmgFb',el).textContent=ok?'Correcto. Si no se reporta de inmediato, no queda claro cuándo ocurrió el daño.':'No es correcto. Los daños nuevos van en Daños y Reportes, de inmediato.'})}});
+
+M.push({ph:2,html:`
+<p class="kicker">Módulo 6 · Operación</p>
+<h2>Durante tu turno</h2>
+<div class="grid3" style="margin-top:18px">
+ <div class="panel" style="margin-top:0"><h3>Solo para trabajar</h3><p>La unidad se usa únicamente para la operación autorizada en DiDi. No se permiten viajes personales.</p></div>
+ <div class="panel" style="margin-top:0"><h3>Dentro del Área SEVIA</h3><p>Opera solo en la zona autorizada, salvo instrucción o autorización expresa del equipo operativo.</p></div>
+ <div class="panel" style="margin-top:0"><h3>Conduce seguro</h3><p>Respeta límites de velocidad, señalamientos, reglas de tránsito y la seguridad de usuarios y terceros.</p></div>
+ <div class="panel" style="margin-top:0"><h3>Cuida la unidad</h3><p>Vehículo, equipamiento, interior, exterior y limpieza general: es tu herramienta de trabajo.</p></div>
+ <div class="panel" style="margin-top:0"><h3>Reporta y comunícate</h3><p>Accidentes, golpes, fallas o testigos se reportan de inmediato. Mantente atento a los grupos.</p></div>
+ <div class="panel" style="margin-top:0"><h3>Tabla de Puntos y Descuentos</h3><p>Está publicada en el HUB. Consúltala: define puntos, descuentos y efectos en bonos o métricas.</p></div>
+</div>
+<div class="grid2">
+ <div class="panel"><h3>Simula tu batería de regreso</h3>
+  <div class="gauge-wrap"><div class="batt"><div class="lvl" id="bLvl"></div><div class="min" title="Mínimo 30%"></div></div><div><div class="big-num" id="bNum"></div><div id="bTxt" style="font-weight:600"></div></div></div>
+  <label class="f" for="bRange">Batería al llegar al HUB</label><input type="range" id="bRange" min="0" max="100" value="45">
+ </div>
+ <div class="panel"><h3>Simula tu tiempo de operación</h3>
+  <div class="big-num" id="hNum"></div><div id="hTxt" style="font-weight:600"></div>
+  <div class="q-bar" style="height:18px"><div id="hBar"></div></div>
+  <label class="f" for="hRange">Horas operando</label><input type="range" id="hRange" min="0" max="12" step="0.5" value="7">
+ </div>
+</div>
+<div class="panel"><h3>Entrega la unidad limpia</h3><p>Sin basura, sin objetos personales, asientos limpios, interior ordenado y en condiciones para el siguiente Driver.</p></div>`,
+init(el){const b=()=>{const v=+$('#bRange',el).value,ok=v>=30;const l=$('#bLvl',el);l.style.width=v+'%';l.style.background=ok?'var(--green)':'var(--red)';
+  $('#bNum',el).textContent=v+'%';$('#bTxt',el).textContent=ok?'Puedes entregar la unidad.':'Por debajo del mínimo de 30%.';$('#bTxt',el).style.color=ok?'var(--green)':'var(--red)'};
+ const h=()=>{const v=+$('#hRange',el).value;const bar=$('#hBar',el);bar.style.width=Math.min(v/10*100,100)+'%';bar.style.background=v>10?'var(--red)':v>=9?'var(--amber)':'var(--green)';
+  $('#hNum',el).textContent=v+' h';$('#hTxt',el).textContent=v>10?'Excede el máximo de 10 horas.':v>=9?'Planea tu regreso al HUB ya.':'Dentro del tiempo establecido.';$('#hTxt',el).style.color=v>10?'var(--red)':'var(--ink)'};
+ $('#bRange',el).oninput=b;$('#hRange',el).oninput=h;b();h();}});
+
+M.push({ph:2,html:`
+<p class="kicker">Módulo 7 · Operación</p>
+<h2>Usa el grupo correcto</h2>
+<p class="lead">Cada grupo de WhatsApp tiene una función. No mezcles reportes ni evidencias.</p>
+<div class="groups" id="grpCards"></div>
+<div class="panel"><h3>¿A qué grupo va cada mensaje?</h3><p id="grpScore" style="color:var(--muted);margin-top:0"></p><div id="grpGame"></div></div>`,
+init(el){$('#grpCards',el).innerHTML=GRUPOS.map(g=>`<div class="group" style="--c:${g.c}"><h3>${g.k}</h3><p>${g.d}</p></div>`).join('');
+ const res={};const game=$('#grpGame',el);
+ game.innerHTML=ESCENARIOS.map((s,i)=>`<div class="scen" data-i="${i}"><div>${i+1}. ${s[0]}</div><div class="opts">${GRUPOS.map(g=>`<button data-g="${g.k}">${g.k}</button>`).join('')}</div><div class="fb"></div></div>`).join('');
+ const score=()=>{const n=Object.keys(res).length,ok=Object.values(res).filter(Boolean).length;$('#grpScore',el).textContent='Aciertos: '+ok+' de '+ESCENARIOS.length+(n===ESCENARIOS.length&&ok===n?'. Dominas los canales.':'')};
+ $$('.scen',game).forEach(sc=>{const i=+sc.dataset.i;$$('button',sc).forEach(b=>b.onclick=()=>{$$('button',sc).forEach(x=>x.classList.remove('ok','bad'));const ok=b.dataset.g===ESCENARIOS[i][1];
+  b.classList.add(ok?'ok':'bad');if(!ok)$$('button',sc).find(x=>x.dataset.g===ESCENARIOS[i][1]).classList.add('ok');
+  $('.fb',sc).textContent=ok?'Correcto.':'Va en '+ESCENARIOS[i][1]+'.';$('.fb',sc).style.color=ok?'var(--green)':'var(--red)';res[i]=res[i]===undefined?ok:res[i];score()})});score();}});
+
+M.push({ph:3,html:`
+<p class="kicker">Módulo 8 · Aterrizaje</p>
+<h2>Tu jornada no termina cuando llegas al HUB</h2>
+<p class="lead">Al regresar completas todo el procedimiento de cierre, en este orden.</p>
+<div class="panel"><ol class="steps">
+ <li><b>Regresa al HUB a tiempo</b>Planea tu regreso para concluir dentro del horario establecido.</li>
+ <li><b>Revisa y limpia la unidad</b>Retira basura y objetos personales, revisa limpieza, daños y equipamiento.</li>
+ <li><b>Envía tu reporte de FIN DE TURNO</b>En el grupo Tableros, con los cuatro datos, el equipamiento y la foto completa del tablero con kilometraje y batería legibles.</li>
+ <li><b>Reporta cualquier daño nuevo</b>Golpes, daños, fallas, incidencias, llantas o equipo: en Daños y Reportes de tu turno.</li>
+ <li><b>Registra tus ingresos con el HubLeader</b>Preséntate para registrar y conciliar los ingresos del turno. No te retires sin este registro.</li>
+ <li><b>Entrega el efectivo</b>Íntegramente, conforme al procedimiento del HUB.</li>
+ <li><b>Entrega la unidad y las llaves</b>Y confirma el cierre con el HubLeader.</li>
+</ol></div>
+<div class="note">Reporte final + revisión + limpieza + registro de ingresos + entrega de efectivo + entrega de unidad + entrega de llaves.</div>`});
+
+M.push({ph:3,html:`
+<p class="kicker">Módulo 9 · Aterrizaje</p>
+<h2>Checklist de cierre</h2>
+<p class="lead">Antes de retirarte, confirma cada punto. Úsalo como práctica de tu cierre diario.</p>
+<div class="grid2">
+ <div id="ckList"></div>
+ <div class="panel" style="margin-top:0;text-align:center"><svg class="ring" viewBox="0 0 150 150"><circle cx="75" cy="75" r="62" fill="none" stroke="var(--line)" stroke-width="14"/><circle id="ckArc" cx="75" cy="75" r="62" fill="none" stroke="var(--green)" stroke-width="14" stroke-linecap="round" stroke-dasharray="0 390" transform="rotate(-90 75 75)" style="transition:stroke-dasharray .3s"/><text id="ckTxt" x="75" y="84" text-anchor="middle" font-family="Barlow Condensed" font-size="32" font-weight="800" fill="var(--ink)"></text></svg>
+  <p id="ckMsg" style="font-weight:600"></p><button class="btn ghost" id="ckReset">Reiniciar checklist</button></div>
+</div>`,
+init(el){let st=S.get('ck',CIERRE.map(()=>false));const L=$('#ckList',el);
+ const r=()=>{L.innerHTML=CIERRE.map((c,i)=>`<label class="check ${st[i]?'on':''}"><input type="checkbox" data-i="${i}" ${st[i]?'checked':''}>${c}</label>`).join('');
+  $$('input',L).forEach(x=>x.onchange=()=>{st[+x.dataset.i]=x.checked;S.set('ck',st);r()});
+  const n=st.filter(Boolean).length;$('#ckArc',el).setAttribute('stroke-dasharray',(n/CIERRE.length*390)+' 390');$('#ckTxt',el).textContent=n+'/'+CIERRE.length;
+  $('#ckMsg',el).textContent=n===CIERRE.length?'Cierre completo. Ya puedes retirarte.':'Faltan '+(CIERRE.length-n)+' punto(s).';$('#ckMsg',el).style.color=n===CIERRE.length?'var(--green)':'var(--ink)'};
+ $('#ckReset',el).onclick=()=>{st=CIERRE.map(()=>false);S.set('ck',st);r()};r();}});
+
+M.push({ph:4,html:`
+<p class="kicker">Repaso</p>
+<h2>Las 10 reglas que no puedes olvidar</h2>
+<ol class="rules">${REGLAS.map((r,i)=>`<li><span class="rn">${i+1}</span><div><b>${r[0]}</b>${r[1]?'<br><span style="color:var(--muted)">'+r[1]+'</span>':''}</div></li>`).join('')}</ol>
+<div class="note">Revisa. Reporta. Opera. Cuida. Regresa. Registra. Entrega.</div>`});
+
+M.push({ph:4,html:`
+<p class="kicker">Evaluación</p>
+<h2>Demuestra lo que aprendiste</h2>
+<p class="lead">${QUIZ.length} preguntas. Necesitas al menos ${PASS} respuestas correctas para aprobar.</p>
+<div class="panel" id="qz"></div>`,
+init(el){const box=$('#qz',el);let i=0,ok=0,ans=false;
+ const saved=S.get('quiz',null);
+ const end=()=>{const pass=ok>=PASS;S.set('quiz',{score:ok,pass});
+  box.innerHTML=`<h3>${pass?'Aprobaste':'Aún no apruebas'}</h3><div class="big-num" style="margin:10px 0">${ok} / ${QUIZ.length}</div><p>${pass?'Continúa a la declaración de conocimiento y aceptación.':'Repasa los módulos y vuelve a intentarlo. Necesitas '+PASS+' aciertos.'}</p><button class="btn ${pass?'ghost':''}" id="qRe">Volver a intentar</button>`;
+  $('#qRe',box).onclick=()=>{i=0;ok=0;q()};updNav()};
+ const q=()=>{ans=false;const Q=QUIZ[i];box.innerHTML=`<div style="color:var(--muted);font-weight:600">Pregunta ${i+1} de ${QUIZ.length}</div><div class="q-bar"><div style="width:${i/QUIZ.length*100}%"></div></div><h3>${Q[0]}</h3><div class="q-opts">${Q[1].map((o,j)=>`<button data-j="${j}">${o}</button>`).join('')}</div><p class="fb" aria-live="polite"></p><button class="btn" id="qNext" style="display:none;margin-top:8px">${i===QUIZ.length-1?'Ver resultado':'Siguiente pregunta'}</button>`;
+  $$('.q-opts button',box).forEach(b=>b.onclick=()=>{if(ans)return;ans=true;const j=+b.dataset.j,c=j===Q[2];if(c)ok++;b.classList.add(c?'ok':'bad');if(!c)$$('.q-opts button',box)[Q[2]].classList.add('ok');
+   $('.fb',box).textContent=c?'Correcto.':'La respuesta correcta está marcada en verde.';$('.fb',box).style.color=c?'var(--green)':'var(--red)';$('#qNext',box).style.display='inline-block'});
+  $('#qNext',box).onclick=()=>{i++;i<QUIZ.length?q():end()}};
+ if(saved&&saved.pass){ok=saved.score;end()}else q();}});
+
+M.push({ph:4,html:`
+<p class="kicker">Declaración</p>
+<h2>Conocimiento y aceptación</h2>
+<div id="decl"></div>`,
+init(el){const box=$('#decl',el);const quiz=S.get('quiz',null);const done=S.get('decl',null);
+ if(!quiz||!quiz.pass){box.innerHTML='<div class="note red">Primero debes aprobar la evaluación para firmar la declaración.</div>';return}
+ const cert=d=>{box.innerHTML=`<div class="cert"><h3 style="margin-top:6px">SEVIA Mobility</h3><h2>Inducción del Driver completada</h2>
+  <dl><dt>Nombre completo</dt><dd>${esc(d.n)}</dd><dt>Fecha</dt><dd>${esc(d.f)}</dd><dt>Turno</dt><dd>${esc(d.t)}</dd><dt>Evaluación</dt><dd>${d.s} / ${QUIZ.length}</dd><dt>Aceptación</dt><dd>${esc(d.ts)}</dd></dl>
+  <div style="border:2px dashed var(--ink);border-radius:10px;padding:12px 16px;display:inline-block;margin-bottom:8px"><div style="color:var(--muted);font-weight:600;font-size:.9rem">Código de verificación</div><div style="font-family:'Barlow Condensed',sans-serif;font-size:2rem;font-weight:800;letter-spacing:.04em">${vcode(d.n,d.t,d.s,d.f)}</div></div>
+  <p>Aceptó la declaración de conocimiento de las reglas de operación, canales de comunicación, recepción y entrega de unidades, obligaciones de reporte y cierre de jornada, y de la Tabla de Puntos y Descuentos vigente publicada en el HUB.</p></div>
+  <div class="note no-print">Toma una captura de pantalla de esta constancia completa, con el código visible, y envíala a tu HubLeader.</div>
+  <p class="no-print" style="margin-top:14px"><button class="btn" id="dPrint">Imprimir</button> <button class="btn ghost" id="dEdit">Corregir datos</button></p>`;
+  $('#dPrint',box).onclick=()=>window.print();$('#dEdit',box).onclick=()=>{S.set('decl',null);form()}};
+ const form=()=>{box.innerHTML=`<div class="panel"><p style="font-size:1.05rem">Confirmo que recibí, revisé y comprendí el contenido del Manual de Inducción del Driver, las reglas de operación, el uso de los canales de comunicación, el procedimiento de recepción y entrega de unidades, así como las obligaciones de reporte y cierre de jornada de SEVIA Mobility.</p>
+  <p style="font-size:1.05rem">También confirmo que conozco la existencia de la Tabla de Puntos y Descuentos por Incumplimiento de Reglas vigente y publicada en el HUB, y entiendo que es mi responsabilidad conocerla y consultarla.</p>
+  <div class="grid3" style="margin-top:10px"><div><label class="f" for="dN">Nombre completo</label><input type="text" id="dN"></div><div><label class="f" for="dF">Fecha</label><input type="text" id="dF" value="${today()}"></div><div><label class="f" for="dT">Turno</label><input type="text" id="dT" placeholder="Ej. M1"></div></div>
+  <label class="check" style="margin-top:16px"><input type="checkbox" id="dC">Acepto la declaración de conocimiento y aceptación.</label>
+  <button class="btn" id="dGo" disabled>Aceptar y firmar</button></div>`;
+  const v=()=>{$('#dGo',box).disabled=!($('#dN',box).value.trim()&&$('#dF',box).value.trim()&&$('#dT',box).value.trim()&&$('#dC',box).checked)};
+  ['dN','dF','dT'].forEach(i=>$('#'+i,box).oninput=v);$('#dC',box).onchange=e=>{e.target.parentNode.classList.toggle('on',e.target.checked);v()};
+  $('#dGo',box).onclick=()=>{const d={n:$('#dN',box).value.trim(),f:$('#dF',box).value.trim(),t:$('#dT',box).value.trim(),s:quiz.score,ts:new Date().toLocaleString('es-MX')};S.set('decl',d);cert(d)}};
+ done?cert(done):form();}});
+
+/* ---------- Navegación ---------- */
+const main=$('#main');
+M.forEach((m,i)=>{const s=document.createElement('section');s.className='module';s.innerHTML=m.html;s.dataset.i=i;main.appendChild(s)});
+const ph=$('#phases');ph.innerHTML=PH.map((p,i)=>`<button data-p="${i}">${p}</button>`).join('');
+$$('button',ph).forEach(b=>b.onclick=()=>go(M.findIndex(m=>m.ph===+b.dataset.p)));
+let cur=Math.min(S.get('cur',0),M.length-1);const inited=new Set();
+function updNav(){$('#prev').disabled=cur===0;const last=cur===M.length-1;$('#next').style.visibility=last?'hidden':'visible';$('#count').textContent=(cur+1)+' de '+M.length;
+ const pct=cur/(M.length-1)*100;$('#routeDone').style.width=pct+'%';$('#routeCar').style.left='calc('+pct+'% )';
+ $$('button',ph).forEach(b=>b.classList.toggle('on',+b.dataset.p===M[cur].ph))}
+function go(i){cur=Math.max(0,Math.min(M.length-1,i));S.set('cur',cur);
+ $$('.module').forEach(s=>s.classList.toggle('on',+s.dataset.i===cur));const sec=$$('.module')[cur];
+ if(M[cur].init&&(!inited.has(cur)||cur===M.length-1)){M[cur].init(sec);inited.add(cur)}
+ updNav();window.scrollTo({top:0,behavior:matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth'})}
+$('#prev').onclick=()=>go(cur-1);$('#next').onclick=()=>go(cur+1);
+document.addEventListener('keydown',e=>{if(e.target.matches('input,textarea,select'))return;if(e.key==='ArrowRight')go(cur+1);if(e.key==='ArrowLeft')go(cur-1)});
+go(cur);
+})();
+</script>
+</body>
+</html>
