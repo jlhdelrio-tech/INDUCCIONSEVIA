@@ -236,6 +236,8 @@ const GRUPOS=[
  {k:'Tableros M / V',c:'#E9A100',d:'Reporte de inicio y fin de turno, siempre con foto del tablero.'},
  {k:'Daños y Reportes',c:'#C73E3E',d:'Golpes, daños, fallas, incidentes, testigos y condiciones nuevas.'},
  {k:'Depósitos',c:'#1F8A5B',d:'Evidencia del efectivo generado durante la jornada.'},
+ {k:'Montos M / V',c:'#0F7C8C',d:'Imagen de lo generado en la aplicación DiDi, en el grupo de tu turno.'},
+ {k:'Reportes Cámaras y Ptos',c:'#8A2D5C',d:'El equipo de monitoreo informa rompimientos de reglas y puntos menos. Revísalo.'},
  {k:'Avisos SEVIA',c:'#6B4FA3',d:'Comunicados, instrucciones, seguimiento y eventos de operación.'},
  {k:'Neumáticos / Equipo de cambio',c:'#4A5A70',d:'Llantas, refacción y equipo de cambio.'},
  {k:'Kit Premier',c:'#B0562B',d:'Evidencias y control del Kit Premier cuando corresponda.'}
@@ -245,6 +247,8 @@ const ESCENARIOS=[
  ['Vas a salir y mandas la foto del tablero con kilometraje y batería.','Tableros M / V'],
  ['A media jornada se enciende un testigo en el tablero.','Daños y Reportes'],
  ['Envías la evidencia del efectivo que generaste en el turno.','Depósitos'],
+ ['Mandas la imagen de lo que generaste en la aplicación DiDi.','Montos M / V'],
+ ['Quieres consultar si el equipo de monitoreo te reportó un rompimiento de reglas o puntos menos.','Reportes Cámaras y Ptos'],
  ['Necesitas coordinar el cambio de una llanta con el equipo.','Neumáticos / Equipo de cambio'],
  ['Al recibir la unidad ves un rayón nuevo en la puerta trasera.','Daños y Reportes'],
  ['Llegas al HUB al final y mandas tu reporte de cierre con foto del tablero.','Tableros M / V'],
@@ -313,25 +317,31 @@ init(el){const D=[
 M.push({ph:0,html:`
 <p class="kicker">Módulo 1</p>
 <h2>Tu turno</h2>
-<p class="lead">Cada Driver tiene un turno asignado. La letra indica el tipo de turno y el número, la posición de tu horario dentro de la operación.</p>
+<p class="lead">Tu turno se forma con una letra y un número. La letra indica si es matutino o vespertino, y el número (del 1 al 12) es la hora de tu horario.</p>
 <div class="grid2">
- <div class="panel"><h3>Arma un turno de ejemplo</h3>
-  <label class="f">Tipo</label><div class="seg" id="tLetter"><button data-v="M" class="on">M</button><button data-v="V">V</button></div>
-  <label class="f">Número</label><div class="seg" id="tNum">${[1,2,3,4,5,6,7].map(n=>`<button data-v="${n}" ${n===2?'class="on"':''}>${n}</button>`).join('')}</div>
+ <div class="panel"><h3>Arma tu turno</h3>
+  <label class="f">Letra</label><div class="seg" id="tLetter"><button data-v="M" class="on">M · Matutino</button><button data-v="V">V · Vespertino</button></div>
+  <label class="f">Número (hora)</label><div class="seg" id="tNum">${[1,2,3,4,5,6,7,8,9,10,11,12].map(n=>`<button data-v="${n}" ${n===5?'class="on"':''}>${n}</button>`).join('')}</div>
  </div>
- <div class="panel" aria-live="polite"><div class="turno-big" id="tBig"></div><p id="tTxt"></p></div>
+ <div class="panel" aria-live="polite"><div class="turno-big" id="tBig"></div><p id="tTxt" style="font-size:1.1rem"></p>
+  <p style="color:var(--muted);margin-bottom:0">Ejemplos: M1 es matutino a la 1 de la mañana. V5 es vespertino a las 5 de la tarde.</p></div>
 </div>
 <div class="panel"><h3>¿A qué hora llegas al HUB?</h3>
  <div class="seg" id="tDay"><button data-v="60" class="on">Primera jornada</button><button data-v="15">Jornadas posteriores</button></div>
- <div class="timebar"><div class="early" id="tEarly"></div><span class="lbl" id="tLbl" style="left:12px"></span><div class="mark" style="left:75%"></div><span class="lbl" style="left:calc(75% + 8px)">Tu horario</span></div>
- <p id="tDayTxt" style="margin-top:10px"></p>
+ <div class="timebar"><div class="early" id="tEarly"></div><span class="lbl" id="tLbl"></span><div class="mark" style="left:75%"></div><span class="lbl" id="tMark" style="left:calc(75% + 8px)"></span></div>
+ <p id="tDayTxt" style="margin-top:10px;font-size:1.1rem"></p>
 </div>`,
-init(el){let L='M',N=2;const r=()=>{$('#tBig',el).innerHTML='<i>'+L+'</i>'+N;$('#tTxt',el).textContent=(L==='M'?'Matutino':'Vespertino / nocturno')+', posición '+N+' del horario asignado.'};
- const seg=(id,cb)=>$$('#'+id+' button',el).forEach(b=>b.onclick=()=>{$$('#'+id+' button',el).forEach(x=>x.classList.remove('on'));b.classList.add('on');cb(b.dataset.v)});
- seg('tLetter',v=>{L=v;r()});seg('tNum',v=>{N=v;r()});r();
- const d=v=>{v=+v;$('#tEarly',el).style.left=(75-(v===60?60:15))+'%';$('#tEarly',el).style.width=(v===60?60:15)+'%';$('#tLbl',el).style.left=(75-(v===60?60:15)+1)+'%';$('#tLbl',el).textContent=v===60?'1 hora antes':'15 min';
-  $('#tDayTxt',el).innerHTML=v===60?'<b>Tu primera jornada:</b> preséntate en el HUB 1 hora antes de tu horario programado.':'<b>A partir de tu segunda jornada:</b> preséntate por lo menos 15 minutos antes.'};
- seg('tDay',d);d(60);}});
+init(el){let L='M',N=5,E=60;
+ const h24=()=>L==='M'?(N===12?12:N):(N===12?24:N+12);
+ const fmt=m=>{m=((m%1440)+1440)%1440;const H=Math.floor(m/60),mi=m%60,hh=H%12===0?12:H%12,mm=String(mi).padStart(2,'0');
+  const suf=H===0&&mi===0?' (medianoche)':H===12&&mi===0?' (mediodía)':H<12?' a. m.':' p. m.';return hh+':'+mm+suf};
+ const r=()=>{const start=h24()*60;$('#tBig',el).innerHTML='<i>'+L+'</i>'+N;
+  $('#tTxt',el).innerHTML=(L==='M'?'Matutino':'Vespertino')+'. Tu horario programado es a las <b>'+fmt(start)+'</b>.';
+  $('#tEarly',el).style.left=(75-(E===60?60:15))+'%';$('#tEarly',el).style.width=(E===60?60:15)+'%';
+  $('#tLbl',el).style.left=(75-(E===60?60:15)+1)+'%';$('#tLbl',el).textContent='Llega: '+fmt(start-E);$('#tMark',el).textContent=fmt(start);
+  $('#tDayTxt',el).innerHTML=(E===60?'<b>Primera jornada:</b> preséntate 1 hora antes, a las ':'<b>A partir de tu segunda jornada:</b> preséntate mínimo 15 minutos antes, a las ')+'<b>'+fmt(start-E)+'</b>.'};
+ const seg=(id,cb)=>$$('#'+id+' button',el).forEach(b=>b.onclick=()=>{$$('#'+id+' button',el).forEach(x=>x.classList.remove('on'));b.classList.add('on');cb(b.dataset.v);r()});
+ seg('tLetter',v=>L=v);seg('tNum',v=>N=+v);seg('tDay',v=>E=+v);r();}});
 
 M.push({ph:0,html:`
 <p class="kicker">Módulo 2</p>
