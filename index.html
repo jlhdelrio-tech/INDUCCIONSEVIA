@@ -38,7 +38,7 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid 
 .wrap{max-width:1040px;margin:0 auto;padding:0 20px}
 
 /* Header + ruta */
-header{position:sticky;top:env(safe-area-inset-top,0px);z-index:10;background:var(--road);color:#fff;padding:12px 0 14px}
+header{flex:none;z-index:10;background:var(--road);color:#fff;padding:12px 0 14px}
 .brand{display:flex;justify-content:space-between;align-items:baseline;gap:12px;flex-wrap:wrap}
 .brand b{font-family:"Barlow Condensed",sans-serif;font-size:1.5rem;letter-spacing:.02em}
 .brand span{opacity:.75;font-size:.95rem}
@@ -50,8 +50,10 @@ header{position:sticky;top:env(safe-area-inset-top,0px);z-index:10;background:va
 .phases button{background:none;border:0;padding:2px 0;color:#fff;opacity:.6;font-weight:600}
 .phases button.on{opacity:1;color:var(--amber)}
 
-main{padding:28px 0 calc(var(--navh,96px) + 32px)}
-html{scroll-padding-bottom:calc(var(--navh,96px) + 16px)}
+html,body{height:100%}
+body{display:flex;flex-direction:column;overflow:hidden}
+#scroller{flex:1 1 auto;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain}
+main{padding:28px 0 40px}
 .module{display:none}
 .module.on{display:block;animation:in .35s ease}
 @keyframes in{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
@@ -84,7 +86,7 @@ label.f{display:block;font-weight:600;font-size:.92rem;margin:10px 0 4px}
 .field-missing{border-color:var(--red)!important}
 
 /* Nav inferior */
-.nav{position:fixed;left:0;right:0;bottom:0;background:var(--surface);border-top:1px solid var(--line);padding:12px 0 calc(12px + env(safe-area-inset-bottom,0px));z-index:10}
+.nav{flex:none;background:var(--surface);border-top:1px solid var(--line);padding:12px 0;z-index:10}
 .nav .wrap{display:flex;justify-content:space-between;align-items:center;gap:12px}
 .nav .count{color:var(--muted);font-weight:600;font-size:.95rem}
 
@@ -189,7 +191,7 @@ input[type=range]{width:100%;accent-color:var(--amber)}
 .cert dt{color:var(--muted);font-weight:600}
 .cert dd{margin:0;font-weight:700}
 .theme-btn{background:transparent;border:1px solid rgba(255,255,255,.35);color:#fff;border-radius:8px;padding:4px 10px;font-size:.85rem}
-@media print{header,.nav,.no-print{display:none!important}main{padding:0}.module{display:none!important}.module.on{display:block!important}}
+@media print{html,body{height:auto}body{display:block;overflow:visible}#scroller{overflow:visible}header,.nav,.no-print{display:none!important}main{padding:0}.module{display:none!important}.module.on{display:block!important}}
 </style>
 </head>
 <body>
@@ -207,7 +209,7 @@ input[type=range]{width:100%;accent-color:var(--amber)}
   </div>
 </header>
 
-<main class="wrap" id="main"></main>
+<div id="scroller"><main class="wrap" id="main"></main></div>
 
 <div class="nav no-print">
   <div class="wrap">
@@ -595,9 +597,7 @@ function updNav(){$('#prev').disabled=cur===0;const last=cur===M.length-1;$('#ne
 function go(i){cur=Math.max(0,Math.min(M.length-1,i));S.set('cur',cur);
  $$('.module').forEach(s=>s.classList.toggle('on',+s.dataset.i===cur));const sec=$$('.module')[cur];
  if(M[cur].init&&(!inited.has(cur)||cur===M.length-1)){M[cur].init(sec);inited.add(cur)}
- updNav();window.scrollTo({top:0,behavior:matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth'})}
-const navEl=$('.nav');const setNavH=()=>root.style.setProperty('--navh',navEl.offsetHeight+'px');setNavH();
-try{new ResizeObserver(setNavH).observe(navEl)}catch(e){addEventListener('resize',setNavH)}
+ updNav();$('#scroller').scrollTo({top:0,behavior:matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth'})}
 $('#prev').onclick=()=>go(cur-1);$('#next').onclick=()=>go(cur+1);
 document.addEventListener('keydown',e=>{if(e.target.matches('input,textarea,select'))return;if(e.key==='ArrowRight')go(cur+1);if(e.key==='ArrowLeft')go(cur-1)});
 go(cur);
