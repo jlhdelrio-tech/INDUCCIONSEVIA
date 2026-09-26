@@ -50,7 +50,8 @@ header{position:sticky;top:env(safe-area-inset-top,0px);z-index:10;background:va
 .phases button{background:none;border:0;padding:2px 0;color:#fff;opacity:.6;font-weight:600}
 .phases button.on{opacity:1;color:var(--amber)}
 
-main{padding:28px 0 120px}
+main{padding:28px 0 calc(var(--navh,96px) + 32px)}
+html{scroll-padding-bottom:calc(var(--navh,96px) + 16px)}
 .module{display:none}
 .module.on{display:block;animation:in .35s ease}
 @keyframes in{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
@@ -595,6 +596,8 @@ function go(i){cur=Math.max(0,Math.min(M.length-1,i));S.set('cur',cur);
  $$('.module').forEach(s=>s.classList.toggle('on',+s.dataset.i===cur));const sec=$$('.module')[cur];
  if(M[cur].init&&(!inited.has(cur)||cur===M.length-1)){M[cur].init(sec);inited.add(cur)}
  updNav();window.scrollTo({top:0,behavior:matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth'})}
+const navEl=$('.nav');const setNavH=()=>root.style.setProperty('--navh',navEl.offsetHeight+'px');setNavH();
+try{new ResizeObserver(setNavH).observe(navEl)}catch(e){addEventListener('resize',setNavH)}
 $('#prev').onclick=()=>go(cur-1);$('#next').onclick=()=>go(cur+1);
 document.addEventListener('keydown',e=>{if(e.target.matches('input,textarea,select'))return;if(e.key==='ArrowRight')go(cur+1);if(e.key==='ArrowLeft')go(cur-1)});
 go(cur);
